@@ -115,6 +115,11 @@ def get_pred(data, args, fout):
 def main():
     os.makedirs(args.save_dir, exist_ok=True)
     print(args)
+    if args.model_path is not None:
+        # overwrite model
+        args.model = args.model_path
+        model_map[args.model] = args.model_path
+        maxlen_map[args.model] = maxlen_map["Llama-3.1-8B-Instruct"]
     if args.rag > 0:
         out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + f"_rag_{str(args.rag)}.jsonl")
     elif args.no_context:
@@ -151,6 +156,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--save_dir", "-s", type=str, default="results")
     parser.add_argument("--model", "-m", type=str, default="GLM-4-9B-Chat")
+    parser.add_argument("--model_path", type=str, default=None)
     parser.add_argument("--cot", "-cot", action='store_true') # set to True if using COT
     parser.add_argument("--no_context", "-nc", action='store_true') # set to True if using no context (directly measuring memorization)
     parser.add_argument("--rag", "-rag", type=int, default=0) # set to 0 if RAG is not used, otherwise set to N when using top-N retrieved context
