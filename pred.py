@@ -114,7 +114,6 @@ def get_pred(data, args, fout):
 
 def main():
     os.makedirs(args.save_dir, exist_ok=True)
-    print(args)
     if args.model_path is not None:
         # overwrite model
         args.model = args.model_path
@@ -128,6 +127,7 @@ def main():
         out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + "_cot.jsonl")
     else:
         out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + ".jsonl")
+    print(args)
 
     dataset = load_dataset('THUDM/LongBench-v2', split='train') # dataset = json.load(open('data.json', 'r', encoding='utf-8'))
     data_all = [{"_id": item["_id"], "domain": item["domain"], "sub_domain": item["sub_domain"], "difficulty": item["difficulty"], "length": item["length"], "question": item["question"], "choice_A": item["choice_A"], "choice_B": item["choice_B"], "choice_C": item["choice_C"], "choice_D": item["choice_D"], "answer": item["answer"], "context": item["context"]} for item in dataset]
