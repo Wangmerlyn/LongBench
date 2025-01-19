@@ -7,7 +7,7 @@ ps aux | grep vllm | grep -v grep | awk '{print $2}' | xargs kill
 MODEL_PATH=${1:-"/mnt/longcontext/models/siyuan/llama3/llama-3.1-8B-instruct"}
 
 # Define the IS_COT flag (default value can be overridden by the second script argument)
-IS_COT=${2:-true}
+IS_COT=${2:-false}
 
 # Define the log file for the backend server output
 LOG_FILE=${3:-"vllm_serve_output.log"}
