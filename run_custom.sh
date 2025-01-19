@@ -1,7 +1,19 @@
 #!/bin/bash
 
-# kill all other vllm code before starting
-ps aux | grep vllm | grep -v grep | awk '{print $2}' | xargs kill
+# Kill all other vllm processes before starting
+pids=$(ps aux | grep vllm | grep -v grep | awk '{print $2}')
+
+if [ -z "$pids" ]; then
+    echo "No vllm processes found to kill."
+else
+    echo "Killing the following vllm processes: $pids"
+    echo "$pids" | xargs kill
+    if [ $? -eq 0 ]; then
+        echo "Successfully killed vllm processes."
+    else
+        echo "Failed to kill some vllm processes. Please check permissions or process status."
+    fi
+fi
 
 # Define the model path (default value can be overridden by the first script argument)
 MODEL_PATH=${1:-"/mnt/longcontext/models/siyuan/llama3/llama-3.1-8B-instruct"}
