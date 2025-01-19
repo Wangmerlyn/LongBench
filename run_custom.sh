@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# kill all other vllm code before starting
+ps aux | grep vllm | grep -v grep | awk '{print $2}' | xargs kill
+
 # Define the model path (default value can be overridden by the first script argument)
 MODEL_PATH=${1:-"/mnt/longcontext/models/siyuan/llama3/llama-3.1-8B-instruct"}
 
