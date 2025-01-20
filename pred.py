@@ -133,15 +133,20 @@ def main():
     data_all = [{"_id": item["_id"], "domain": item["domain"], "sub_domain": item["sub_domain"], "difficulty": item["difficulty"], "length": item["length"], "question": item["question"], "choice_A": item["choice_A"], "choice_B": item["choice_B"], "choice_C": item["choice_C"], "choice_D": item["choice_D"], "answer": item["answer"], "context": item["context"]} for item in dataset]
 
     # cache
-    has_data = {}
-    if os.path.exists(out_file):
-        with open(out_file, encoding='utf-8') as f:
-            has_data = {json.loads(line)["_id"]: 0 for line in f}
-    fout = open(out_file, 'a', encoding='utf-8')
-    data = []
-    for item in data_all:
-        if item["_id"] not in has_data:
-            data.append(item)
+    if args.use_cache:
+        has_data = {}
+        if os.path.exists(out_file):
+            with open(out_file, encoding='utf-8') as f:
+                has_data = {json.loads(line)["_id"]: 0 for line in f}
+        fout = open(out_file, 'a', encoding='utf-8')
+        data = []
+        for item in data_all:
+            if item["_id"] not in has_data:
+                data.append(item)
+    else:
+        has_data = {}
+        fout = open(out_file, 'w', encoding='utf-8')
+        data = data_all
 
     data_subsets = [data[i::args.n_proc] for i in range(args.n_proc)]
     processes = []
@@ -161,5 +166,6 @@ if __name__ == "__main__":
     parser.add_argument("--no_context", "-nc", action='store_true') # set to True if using no context (directly measuring memorization)
     parser.add_argument("--rag", "-rag", type=int, default=0) # set to 0 if RAG is not used, otherwise set to N when using top-N retrieved context
     parser.add_argument("--n_proc", "-n", type=int, default=16)
+    parser.add_argument("--use_cache", "-c", action='store_true')
     args = parser.parse_args()
     main()

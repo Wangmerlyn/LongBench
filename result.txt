@@ -1,3 +1,6 @@
 Model	Overall	Easy	Hard	Short	Medium	Long
 Qwen2.5-7B_1653_cot	2.5	2.9	2.2	1.2	3.4	3.0
-llama-3.1-8B-instruct	29.6	30.7	28.9	34.4	27.0	26.9
+llama-3.1-8B-instruct-no-fix-seed	29.6	30.7	28.9	34.4	27.0	26.9
+llama-3.1-8B-instruct_1	30.0	32.8	28.3	33.3	29.3	25.9
+llama-3.1-8B-instruct_2	29.0	31.2	27.7	34.4	25.1	27.8
+llama-3.1-8B-instruct	29.0	31.2	27.7	34.4	25.1	27.8

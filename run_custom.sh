@@ -37,5 +37,5 @@ if [ "$IS_COT" == "true" ]; then
 fi
 
 # Run the prediction script with the specified model path and CoT argument
-python pred.py --model_path $MODEL_PATH $COT_ARG
+python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc 1 
 
