@@ -1,4 +1,13 @@
-import os, json
+import os, json, re
+
+def extract_final_answer(text):
+    
+    match = re.search(r'final answer:\s*\(([A-Za-z])\)', text, re.IGNORECASE)
+    
+    if match:
+        return match.group(1)  
+    else:
+        return None  
 
 files = os.listdir('results')
 output = ["Model\tOverall\tEasy\tHard\tShort\tMedium\tLong"]
@@ -13,6 +22,10 @@ for file in files:
     easy, hard, short, medium, long = 0, 0, 0, 0, 0
     easy_acc, hard_acc, short_acc, medium_acc, long_acc = 0, 0, 0, 0, 0
     for pred in pred_data:
+        if pred["pred"] is None and "response_cot" in pred:
+            extra_match_answer = extract_final_answer(pred["response_cot"])
+            print(extra_match_answer)
+            pred['judge'] = True if extra_match_answer == pred['answer'] else False
         acc = int(pred['judge'])
         if compensated and pred["pred"] == None:
             acc = 0.25
