@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Kill all other vllm processes before starting
-pids=$(ps aux | grep vllm | grep -v grep | awk '{print $2}')
+pids=$(ps auxww | grep vllm | grep -v grep | awk '{print $2}')
 
 if [ -z "$pids" ]; then
     echo "No vllm processes found to kill."
@@ -37,5 +37,6 @@ if [ "$IS_COT" == "true" ]; then
 fi
 
 # Run the prediction script with the specified model path and CoT argument
-python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc 1 
+python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc 1 \
+    --save_dir /mnt/longcontext/models/siyuan/test_code/LongBench-v2/results
 
