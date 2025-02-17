@@ -92,16 +92,16 @@ def get_pred(data, args, fout):
             template = template_0shot
         prompt = template.replace('$DOC$', context.strip()).replace('$Q$', item['question'].strip()).replace('$C_A$', item['choice_A'].strip()).replace('$C_B$', item['choice_B'].strip()).replace('$C_C$', item['choice_C'].strip()).replace('$C_D$', item['choice_D'].strip())
         if args.cot:
-            output = query_llm(prompt, model, tokenizer, client, temperature=0.1, max_new_tokens=1024)
+            output = query_llm(prompt, model, tokenizer, client, temperature=args.temperature, max_new_tokens=1024)
         else:
-            output = query_llm(prompt, model, tokenizer, client, temperature=0.1, max_new_tokens=128)
+            output = query_llm(prompt, model, tokenizer, client, temperature=args.temperature, max_new_tokens=128)
         if output == '':
             continue
         if args.cot: # extract answer
             response = output.strip()
             item['response_cot'] = response
             prompt = template_0shot_cot_ans.replace('$DOC$', context.strip()).replace('$Q$', item['question'].strip()).replace('$C_A$', item['choice_A'].strip()).replace('$C_B$', item['choice_B'].strip()).replace('$C_C$', item['choice_C'].strip()).replace('$C_D$', item['choice_D'].strip()).replace('$COT$', response)
-            output = query_llm(prompt, model, tokenizer, client, temperature=0.1, max_new_tokens=128)
+            output = query_llm(prompt, model, tokenizer, client, temperature=args.temperature, max_new_tokens=128)
             if output == '':
                 continue
         response = output.strip()
@@ -122,11 +122,11 @@ def main():
     if args.rag > 0:
         out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + f"_rag_{str(args.rag)}.jsonl")
     elif args.no_context:
-        out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + "_no_context.jsonl")
+        out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + f"_temp{args.temperature}_no_context.jsonl")
     elif args.cot:
-        out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + "_cot.jsonl")
+        out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + f"_temp{args.temperature}_cot.jsonl")
     else:
-        out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + ".jsonl")
+        out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + f"_temp{args.temperature}.jsonl")
     print(args)
 
     dataset = load_dataset('THUDM/LongBench-v2', split='train') # dataset = json.load(open('data.json', 'r', encoding='utf-8'))
@@ -167,5 +167,6 @@ if __name__ == "__main__":
     parser.add_argument("--rag", "-rag", type=int, default=0) # set to 0 if RAG is not used, otherwise set to N when using top-N retrieved context
     parser.add_argument("--n_proc", "-n", type=int, default=16)
     parser.add_argument("--use_cache", "-c", action='store_true')
+    parser.add_argument("--temperature", "-t", type=float, default=0.1)
     args = parser.parse_args()
     main()

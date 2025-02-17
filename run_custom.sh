@@ -1,5 +1,24 @@
 #!/bin/bash
 
+# Parse command-line arguments using long options
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --model_path) MODEL_PATH="$2"; shift 2 ;;
+        --is_cot) IS_COT="$2"; shift 2 ;;
+        --log_file) LOG_FILE="$2"; shift 2 ;;
+        --temperature) TEMPERATURE="$2"; shift 2 ;;
+        --save_dir) SAVE_DIR="$2"; shift 2 ;;
+        *) echo "Unknown option: $1" && exit 1 ;;
+    esac
+done
+
+# Set default values if arguments are not provided
+MODEL_PATH=${MODEL_PATH:-"/mnt/longcontext/models/siyuan/llama3/llama-3.1-8B-instruct"}
+IS_COT=${IS_COT:-false}
+LOG_FILE=${LOG_FILE:-"vllm_serve_output.log"}
+TEMPERATURE=${TEMPERATURE:-"0.1"}
+SAVE_DIR=${SAVE_DIR:-"/mnt/longcontext/models/siyuan/test_code/LongBench-v2/results"}
+
 # Kill all other vllm processes before starting
 pids=$(ps auxww | grep vllm | grep -v grep | awk '{print $2}')
 
@@ -15,16 +34,8 @@ else
     fi
 fi
 
-# Define the model path (default value can be overridden by the first script argument)
-MODEL_PATH=${1:-"/mnt/longcontext/models/siyuan/llama3/llama-3.1-8B-instruct"}
-
-# Define the IS_COT flag (default value can be overridden by the second script argument)
-IS_COT=${2:-false}
-
-# Define the log file for the backend server output
-LOG_FILE=${3:-"vllm_serve_output.log"}
-
 # Start the backend server in the background and redirect output to the log file
+mkdir -p "$(dirname "$LOG_FILE")"
 vllm serve $MODEL_PATH --api-key token-abc123 --tensor-parallel-size 4 --gpu-memory-utilization 0.95 --max_model_len 131072 --trust-remote-code > "$LOG_FILE" 2>&1 &
 
 # Wait for the server to fully start
@@ -36,7 +47,17 @@ if [ "$IS_COT" == "true" ]; then
     COT_ARG="--cot"
 fi
 
+# echo all key parameters
+echo "========================="
+echo "Model Path: $MODEL_PATH"
+echo "Is CoT: $IS_COT"
+echo "Log File: $LOG_FILE"
+echo "Temperature: $TEMPERATURE"
+echo "Save Directory: $SAVE_DIR"
+echo "========================="
+
+
 # Run the prediction script with the specified model path and CoT argument
 python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc 1 \
-    --save_dir /mnt/longcontext/models/siyuan/test_code/LongBench-v2/results
-
+    --save_dir $SAVE_DIR \
+    --temperature $TEMPERATURE
