@@ -97,13 +97,18 @@ def get_pred(data, args, fout):
             output = query_llm(prompt, model, tokenizer, client, temperature=args.temperature, max_new_tokens=128)
         if output == '':
             continue
-        if args.cot: # extract answer
-            response = output.strip()
-            item['response_cot'] = response
-            prompt = template_0shot_cot_ans.replace('$DOC$', context.strip()).replace('$Q$', item['question'].strip()).replace('$C_A$', item['choice_A'].strip()).replace('$C_B$', item['choice_B'].strip()).replace('$C_C$', item['choice_C'].strip()).replace('$C_D$', item['choice_D'].strip()).replace('$COT$', response)
-            output = query_llm(prompt, model, tokenizer, client, temperature=args.temperature, max_new_tokens=128)
-            if output == '':
-                continue
+        if args.cot: # extract answer from COT
+            if args.cot_answer_extract:
+                response = output.strip()
+                item['response_cot'] = response
+                prompt = template_0shot_cot_ans.replace('$DOC$', context.strip()).replace('$Q$', item['question'].strip()).replace('$C_A$', item['choice_A'].strip()).replace('$C_B$', item['choice_B'].strip()).replace('$C_C$', item['choice_C'].strip()).replace('$C_D$', item['choice_D'].strip()).replace('$COT$', response)
+                output = query_llm(prompt, model, tokenizer, client, temperature=args.temperature, max_new_tokens=128)
+                if output == '':
+                    continue
+            else:
+                response = output.strip()
+                item['response_cot'] = response
+                output = "not extracted"
         response = output.strip()
         item['response'] = response
         item['pred'] = extract_answer(response)
@@ -163,6 +168,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", "-m", type=str, default="GLM-4-9B-Chat")
     parser.add_argument("--model_path", type=str, default=None)
     parser.add_argument("--cot", "-cot", action='store_true') # set to True if using COT
+    parser.add_argument("--cot_answer_extract", type=bool, action='store_true') # set to True if using COT answer extraction
     parser.add_argument("--no_context", "-nc", action='store_true') # set to True if using no context (directly measuring memorization)
     parser.add_argument("--rag", "-rag", type=int, default=0) # set to 0 if RAG is not used, otherwise set to N when using top-N retrieved context
     parser.add_argument("--n_proc", "-n", type=int, default=16)
