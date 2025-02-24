@@ -73,7 +73,7 @@ def main():
         maxlen_map[args.model] = maxlen_map["Llama-3.1-8B-Instruct"]
     model_map[args.judge_model_path] = args.judge_model_path
     maxlen_map[args.judge_model_path] = maxlen_map["Llama-3.1-8B-Instruct"]
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    tokenizer = AutoTokenizer.from_pretrained(args.judge_model_path, trust_remote_code=True)
     model = args.model
 
     client = OpenAI(
