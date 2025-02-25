@@ -92,7 +92,7 @@ def get_pred(data, args, fout):
             template = template_0shot
         prompt = template.replace('$DOC$', context.strip()).replace('$Q$', item['question'].strip()).replace('$C_A$', item['choice_A'].strip()).replace('$C_B$', item['choice_B'].strip()).replace('$C_C$', item['choice_C'].strip()).replace('$C_D$', item['choice_D'].strip())
         if args.cot:
-            output = query_llm(prompt, model, tokenizer, client, temperature=args.temperature, max_new_tokens=1024)
+            output = query_llm(prompt, model, tokenizer, client, temperature=args.temperature, max_new_tokens=8192)
         else:
             output = query_llm(prompt, model, tokenizer, client, temperature=args.temperature, max_new_tokens=128)
         if output == '':
