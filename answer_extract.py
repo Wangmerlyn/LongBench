@@ -90,7 +90,7 @@ def main():
     for output_item in tqdm(output_file_data):
         context = " "
         prompt = template_0shot_cot_ans.replace('$DOC$', context.strip()).replace('$Q$', output_item['question'].strip()).replace('$C_A$', output_item['choice_A'].strip()).replace('$C_B$', output_item['choice_B'].strip()).replace('$C_C$', output_item['choice_C'].strip()).replace('$C_D$', output_item['choice_D'].strip()).replace('$COT$', output_item['response_cot'])
-        output = query_llm(prompt, args.judge_model_path, tokenizer, client, temperature=0, max_new_tokens=128)
+        output = query_llm(prompt, args.judge_model_path, tokenizer, client, temperature=0, max_new_tokens=8192)
         if output == '':
             assert False, "error extracting answer, model output is empty"
         response = output.strip()
