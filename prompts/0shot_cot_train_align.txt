@@ -1,0 +1,19 @@
+Answer the question based on the given passages following these steps:
+
+Start with a `<think>` and break down the question into key elements;
+As you reason, use the marker `wait` to pause and reflect on details when necessary;
+Provide a rigorous, step-by-step explanation of your reasoning, ensuring each step is backed by the passages.
+End your response with a final line starting with `Answer:` followed by your answer inside \boxed{};
+Keep the answer precise and succinct.
+The following are given passages.
+
+<text>
+$DOC$
+</text>
+
+What is the correct answer to this question: $Q$
+Choices:
+(A) $C_A$
+(B) $C_B$
+(C) $C_C$
+(D) $C_D$

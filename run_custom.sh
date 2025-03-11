@@ -10,6 +10,7 @@ while [[ $# -gt 0 ]]; do
         --temperature) TEMPERATURE="$2"; shift 2 ;;
         --save_dir) SAVE_DIR="$2"; shift 2 ;;
         --num_gpus) NUM_GPUS="$2"; shift 2 ;;
+        --cot_prompt_type) COT_PROMPT_TYPE="$2"; shift 2 ;;
         *) echo "Unknown option: $1" && exit 1 ;;
     esac
 done
@@ -22,6 +23,7 @@ LOG_FILE=${LOG_FILE:-"vllm_serve_output.log"}
 TEMPERATURE=${TEMPERATURE:-"0.1"}
 SAVE_DIR=${SAVE_DIR:-"/mnt/longcontext/models/siyuan/test_code/LongBench-v2/results"}
 NUM_GPUS=${NUM_GPUS:-4}
+COT_PROMPT_TYPE=${COT_PROMPT_TYPE:-"default"}
 
 # Kill all other vllm processes before starting
 pids=$(ps auxww | grep vllm | grep -v grep | awk '{print $2}')
@@ -63,13 +65,15 @@ echo "CoT Answer Extract: $COT_ANSWER_EXTRACT"
 echo "Log File: $LOG_FILE"
 echo "Temperature: $TEMPERATURE"
 echo "Save Directory: $SAVE_DIR"
+echo "COT Prompt Type: $COT_PROMPT_TYPE"
 echo "========================="
 
 
 # Run the prediction script with the specified model path and CoT argument
 python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc 1 \
     --save_dir $SAVE_DIR \
-    --temperature $TEMPERATURE
+    --temperature $TEMPERATURE \
+    --cot_prompt_type $COT_PROMPT_TYPE 
 echo "Prediction script done..."
 
 # if cot is true but cot answer extract is false, then run the following command for answer extract

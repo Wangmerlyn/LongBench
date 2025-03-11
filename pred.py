@@ -18,6 +18,7 @@ template_rag = open('prompts/0shot_rag.txt', encoding='utf-8').read()
 template_no_context = open('prompts/0shot_no_context.txt', encoding='utf-8').read()
 template_0shot = open('prompts/0shot.txt', encoding='utf-8').read()
 template_0shot_cot = open('prompts/0shot_cot.txt', encoding='utf-8').read()
+template_0shot_cot_train_align = open('prompts/0shot_cot_train_align.txt', encoding='utf-8').read()
 template_0shot_cot_ans = open('prompts/0shot_cot_ans.txt', encoding='utf-8').read()
 
 def query_llm(prompt, model, tokenizer, client=None, temperature=0.5, max_new_tokens=128, stop=None):
@@ -87,7 +88,12 @@ def get_pred(data, args, fout):
         elif args.no_context:
             template = template_no_context
         elif args.cot:
-            template = template_0shot_cot
+            if args.cot_prompt_type == "default":
+                template = template_0shot_cot
+            elif args.cot_prompt_type == "train_align":
+                template = template_0shot_cot_train_align
+            else:
+                raise ValueError(f"Invalid cot_prompt_type, got {args.cot_prompt_type} which is unknown.")
         else:
             template = template_0shot
         prompt = template.replace('$DOC$', context.strip()).replace('$Q$', item['question'].strip()).replace('$C_A$', item['choice_A'].strip()).replace('$C_B$', item['choice_B'].strip()).replace('$C_C$', item['choice_C'].strip()).replace('$C_D$', item['choice_D'].strip())
@@ -168,6 +174,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", "-m", type=str, default="GLM-4-9B-Chat")
     parser.add_argument("--model_path", type=str, default=None)
     parser.add_argument("--cot", "-cot", action='store_true') # set to True if using COT
+    parser.add_argument("--cot_prompt_type", type=str, default="default") # set to default or train_align
     parser.add_argument("--cot_answer_extract", action='store_true') # set to True if using COT answer extraction
     parser.add_argument("--no_context", "-nc", action='store_true') # set to True if using no context (directly measuring memorization)
     parser.add_argument("--rag", "-rag", type=int, default=0) # set to 0 if RAG is not used, otherwise set to N when using top-N retrieved context
