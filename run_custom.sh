@@ -117,5 +117,6 @@ if [ "$COT_ANSWER_EXTRACT" == "false" ]; then
     python answer_extract.py --model_path $MODEL_PATH --n_proc 1 \
         --save_dir $SAVE_DIR    \
         --judge_model_path $JUDGE_MODEL  \
-        --temperature $TEMPERATURE
+        --temperature $TEMPERATURE    \
+        --boxed
 fi
