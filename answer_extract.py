@@ -54,15 +54,24 @@ def query_llm(prompt, model, tokenizer, client=None, temperature=0.5, max_new_to
 
 def extract_answer(response):
     response = response.replace('*', '')
-    match = re.search(r'The correct answer is \(([A-D])\)', response)
-    if match:
-        return match.group(1)
+    if args.boxed:
+        # Find all occurrences of \boxed{X} and take the last one
+        matches = re.findall(r'\\boxed{([A-D])}', response)
+        if matches:
+            return matches[-1]  # last boxed letter
+        else:
+            return None
     else:
-        match = re.search(r'The correct answer is ([A-D])', response)
+        # Original extraction method (no --boxed flag)
+        match = re.search(r'The correct answer is \(([A-D])\)', response)
         if match:
             return match.group(1)
         else:
-            return None
+            match = re.search(r'The correct answer is ([A-D])', response)
+            if match:
+                return match.group(1)
+            else:
+                return None
 
 def main():
 
@@ -117,5 +126,10 @@ if __name__ == "__main__":
     # parser.add_argument("--use_cache", "-c", action='store_true')
     parser.add_argument("--temperature", "-t", type=float, default=0.1)
     parser.add_argument("--judge_model_path",type=str, default="Qwen/Qwen2.5-7B-Instruct")
+    parser.add_argument(
+    "--boxed", 
+    action="store_true", 
+    help="Extract the last boxed choice (A-D) from the response"
+)
     args = parser.parse_args()
     main()
