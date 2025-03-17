@@ -45,7 +45,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 vllm serve $MODEL_PATH --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} --gpu-memory-utilization 0.95 --max_model_len 131072 --trust-remote-code  --port 8000 > "$LOG_FILE" 2>&1 &
 
 # Wait for the server to fully start
-sleep 75
+sleep 400
 
 # Prepare the additional argument for CoT if IS_COT is true
 COT_ARG=""
@@ -110,7 +110,7 @@ if [ "$COT_ANSWER_EXTRACT" == "false" ]; then
     JUDGE_MODEL="/mnt/longcontext/models/siyuan/llama3/Qwen2.5-7B-Instruct"
     vllm serve $JUDGE_MODEL --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} --gpu-memory-utilization 0.95 --max_model_len 32768 --trust-remote-code  --port 8000 > "$LOG_FILE" 2>&1 &
     # Wait for the server to fully start
-    sleep 75
+    sleep 400
 
     # Run the answer extract script
 
