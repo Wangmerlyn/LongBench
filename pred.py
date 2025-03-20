@@ -51,7 +51,7 @@ def query_llm(prompt, model, tokenizer, client=None, temperature=0.5, max_new_to
             raise e
         except Exception as e:
             print("Error Occurs: \"%s\"        Retry ..."%(str(e)))
-            time.sleep(1)
+            time.sleep(10)
     else:
         print("Max tries. Failed.")
         return ''
