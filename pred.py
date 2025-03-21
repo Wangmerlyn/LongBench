@@ -19,6 +19,7 @@ template_no_context = open('prompts/0shot_no_context.txt', encoding='utf-8').rea
 template_0shot = open('prompts/0shot.txt', encoding='utf-8').read()
 template_0shot_cot = open('prompts/0shot_cot.txt', encoding='utf-8').read()
 template_0shot_cot_train_align = open('prompts/0shot_cot_train_align.txt', encoding='utf-8').read()
+template_0shot_cot_qwq_choice = open('prompts/0shot_cot_qwq_choice.txt', encoding='utf-8').read()
 template_0shot_cot_ans = open('prompts/0shot_cot_ans.txt', encoding='utf-8').read()
 
 def query_llm(prompt, model, tokenizer, client=None, temperature=0.5, max_new_tokens=128, stop=None):
@@ -92,6 +93,8 @@ def get_pred(data, args, fout):
                 template = template_0shot_cot
             elif args.cot_prompt_type == "train_align":
                 template = template_0shot_cot_train_align
+            elif args.cot_prompt_type == "qwq_choice":
+                template = template_0shot_cot_qwq_choice
             else:
                 raise ValueError(f"Invalid cot_prompt_type, got {args.cot_prompt_type} which is unknown.")
         else:
