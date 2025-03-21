@@ -21,6 +21,18 @@ def extract_final_answer(text):
         return match.group(1)
     return None
 
+def original_extract_answer(response):
+    response = response.replace('*', '')
+    match = re.search(r'The correct answer is \(([A-D])\)', response)
+    if match:
+        return match.group(1)
+    else:
+        match = re.search(r'The correct answer is ([A-D])', response)
+        if match:
+            return match.group(1)
+        else:
+            return None
+
 def last_boxed_only_string(string: str):
     idx = string.rfind("boxed")
     if idx == -1:
@@ -94,6 +106,10 @@ def evaluate(mode='standard'):
                         pred_option = extract_final_answer(pred["response_cot"])
                     else:
                         pred_option = pred['pred']
+            elif mode == 'original':
+                pred_option = original_extract_answer(pred.get("response", ""))
+            else:
+                raise ValueError(f"Unknown mode: {mode}")
 
             pred['judge'] = pred_option == pred['answer']
 
@@ -131,3 +147,4 @@ if __name__ == "__main__":
     evaluate(mode='standard')
     evaluate(mode='boxed')
     evaluate(mode='mix')
+    evaluate(mode='original')
