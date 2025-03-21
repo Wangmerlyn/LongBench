@@ -12,3 +12,5 @@ Choices:
 (D) $C_D$
 
 Please reason step by step, and put your final answer within \boxed{}.
+
+Please show your choice in the `answer` field with only the choice letter, e.g.,`"answer": "C"`.
