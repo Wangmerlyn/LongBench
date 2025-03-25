@@ -42,7 +42,7 @@ fi
 
 # Start the backend server in the background and redirect output to the log file
 mkdir -p "$(dirname "$LOG_FILE")"
-vllm serve $MODEL_PATH --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} --gpu-memory-utilization 0.95 --max_model_len 131072 --trust-remote-code  --port 8000 --max_num_seqs 1 > "$LOG_FILE" 2>&1 &
+vllm serve $MODEL_PATH --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} --gpu-memory-utilization 0.95 --max_model_len 131072 --trust-remote-code --port 8000 --max_num_seqs 1 | tee -a "$LOG_FILE" 2>&1 &
 
 # Wait for the server to fully start
 sleep 400
