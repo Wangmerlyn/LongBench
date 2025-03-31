@@ -3,3 +3,4 @@ transformers
 tqdm
 flash-attn
 datasets
+flashinfer-python
