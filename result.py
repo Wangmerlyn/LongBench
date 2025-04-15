@@ -63,7 +63,7 @@ def remove_boxed(boxed_str):
     return boxed_str.strip()
 
 def extract_boxed_answer(text):
-    text.replace("\\boxed{}", "")
+    text = text.replace("\\boxed{}", "")
     boxed_content = last_boxed_only_string(text)
     if boxed_content:
         inner_text = remove_boxed(boxed_content)
