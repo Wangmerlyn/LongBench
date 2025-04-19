@@ -11,6 +11,7 @@ while [[ $# -gt 0 ]]; do
         --save_dir) SAVE_DIR="$2"; shift 2 ;;
         --num_gpus) NUM_GPUS="$2"; shift 2 ;;
         --cot_prompt_type) COT_PROMPT_TYPE="$2"; shift 2 ;;
+        --num_sequences) NUM_SEQUENCES="$2"; shift 2 ;;
         *) echo "Unknown option: $1" && exit 1 ;;
     esac
 done
@@ -24,6 +25,7 @@ TEMPERATURE=${TEMPERATURE:-"0.1"}
 SAVE_DIR=${SAVE_DIR:-"/mnt/longcontext/models/siyuan/test_code/LongBench-v2/results"}
 NUM_GPUS=${NUM_GPUS:-4}
 COT_PROMPT_TYPE=${COT_PROMPT_TYPE:-"default"}
+NUM_SEQUENCES=${NUM_SEQUENCES:-1}
 
 # Kill all other vllm processes before starting
 pids=$(ps auxww | grep vllm | grep -v grep | awk '{print $2}')
@@ -43,7 +45,7 @@ fi
 # Start the backend server in the background and redirect output to the log file
 mkdir -p "$(dirname "$LOG_FILE")"
 # vllm serve $MODEL_PATH --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} --gpu-memory-utilization 0.95 --max_model_len 131072 --trust-remote-code  --port 8000 --max_num_seqs 1 > "$LOG_FILE" 2>&1 &
-vllm serve $MODEL_PATH --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} --gpu-memory-utilization 0.95 --max_model_len 131072 --trust-remote-code --port 8000 --max_num_seqs 1 --seed 0 | tee "$LOG_FILE" > /dev/null 2>&1 &
+vllm serve $MODEL_PATH --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} --gpu-memory-utilization 0.95 --max_model_len 131072 --trust-remote-code --port 8000 --max_num_seqs 1 --seed 42 | tee "$LOG_FILE" > /dev/null 2>&1 &
 
 # Wait for the server to fully start
 sleep 400
@@ -74,7 +76,8 @@ echo "========================="
 python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc 1 \
     --save_dir $SAVE_DIR \
     --temperature $TEMPERATURE \
-    --cot_prompt_type $COT_PROMPT_TYPE 
+    --cot_prompt_type $COT_PROMPT_TYPE \
+    --num_sequences $NUM_SEQUENCES 
 echo "Prediction script done..."
 
 # if cot is true but cot answer extract is false, then run the following command for answer extract
@@ -109,7 +112,7 @@ if [ "$COT_ANSWER_EXTRACT" == "false" ]; then
     mkdir -p "$(dirname "$LOG_FILE")"
     # serve the judge model
     JUDGE_MODEL="/mnt/longcontext/models/siyuan/llama3/Qwen2.5-7B-Instruct"
-    vllm serve $JUDGE_MODEL --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} --gpu-memory-utilization 0.95 --max_model_len 32768 --trust-remote-code  --port 8000 --seed 0 > "$LOG_FILE" 2>&1 &
+    vllm serve $JUDGE_MODEL --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} --gpu-memory-utilization 0.95 --max_model_len 32768 --trust-remote-code  --port 8000 --seed 42 > "$LOG_FILE" 2>&1 &
     # Wait for the server to fully start
     sleep 400
 
