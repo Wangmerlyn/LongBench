@@ -17,6 +17,7 @@ for model_path in "${model_paths[@]}"; do
     bash run_custom.sh --model_path "$model_path" \
         --save_dir $current_script_folder/results \
         --temperature 0.6 \
+        --num_sequences 5 \
         --cot_answer_extract false \
         --is_cot true \
         --log_file "/mnt/longcontext/models/siyuan/test_code/LongBench-v2/logs/${model_name}.log" \
