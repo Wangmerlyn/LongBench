@@ -144,7 +144,7 @@ def get_pred(data, args, fout):
                 tokenizer,
                 client,
                 temperature=args.temperature,
-                max_new_tokens=8192,
+                max_new_tokens=2048,
                 num_sequences=args.num_sequences,
             )
         else:
