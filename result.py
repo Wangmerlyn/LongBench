@@ -143,6 +143,8 @@ def evaluate(mode='standard'):
 
     filename = f'result_{mode}.csv'
     results_df.to_csv(filename, index=False, encoding='utf-8')
+    print(f"Using mode '{mode}', results saved to {filename}")
+    print(f"Results:\n{results_df}")
 
 if __name__ == "__main__":
     evaluate(mode='standard')
