@@ -123,3 +123,4 @@ if [ "$COT_ANSWER_EXTRACT" == "false" ]; then
         --judge_model_path $JUDGE_MODEL  \
         --temperature $TEMPERATURE
 fi
+python result.py
