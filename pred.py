@@ -1,5 +1,6 @@
 import os, csv, json
 import argparse
+import shutil
 import time
 from tqdm import tqdm
 from datasets import load_dataset
@@ -274,6 +275,18 @@ def main():
     for p in processes:
         p.join()
 
+    # after all the processes are done, close the file, and copy the output file to "./results/"
+    fout.close()
+    if os.path.exists(out_file):
+        with open(out_file, "r", encoding="utf-8") as f:
+            os.makedirs("./results/", exist_ok=True)
+
+            target_path = os.path.join("./results/", os.path.basename(out_file))
+
+            shutil.copy(out_file, target_path)
+            print(f"Output file copied to {target_path}")
+    else:
+        print(f"Output file {out_file} does not exist.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

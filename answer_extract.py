@@ -102,6 +102,13 @@ def main():
     with open(out_file, 'w', encoding='utf-8') as f:
         for output_item in output_file_data:
             f.write(json.dumps(output_item, ensure_ascii=False) + '\n')
+    # write the same output_file_data to "./results/ folder"
+    alternate_output_file = os.path.join("./results/", args.model.split("/")[-1] + f"_temp{args.temperature}_cot.jsonl")
+    with open(alternate_output_file, 'w', encoding='utf-8') as f:
+        for output_item in output_file_data:
+            f.write(json.dumps(output_item, ensure_ascii=False) + '\n')
+    print("Output saved to %s" % alternate_output_file)
+
 
 
 if __name__ == "__main__":
