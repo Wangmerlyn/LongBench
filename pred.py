@@ -34,6 +34,93 @@ template_0shot_cot_ans = open(
 ).read()
 
 
+def setup_trapi(model_path=None, instance="gcr/shared", api_version="2024-10-21"):
+    import re
+    from azure.identity import (
+        DefaultAzureCredential,
+        ChainedTokenCredential,
+        AzureCliCredential,
+        get_bearer_token_provider,
+    )
+    from openai import AzureOpenAI
+    setup_config = {
+        "scope": "api://trapi/.default",
+        "api_version": api_version,
+        "model_name": "gpt-4o",
+        "model_version": "2024-11-20",
+        "instance": instance,
+    }
+
+    scope = setup_config["scope"]
+    credential = get_bearer_token_provider(
+        ChainedTokenCredential(
+            AzureCliCredential(),
+            DefaultAzureCredential(
+                exclude_cli_credential=True,
+                # Exclude other credentials we are not interested in.
+                exclude_environment_credential=True,
+                exclude_shared_token_cache_credential=True,
+                exclude_developer_cli_credential=True,
+                exclude_powershell_credential=True,
+                exclude_interactive_browser_credential=True,
+                exclude_visual_studio_code_credentials=True,
+                # DEFAULT_IDENTITY_CLIENT_ID is a variable exposed in
+                # Azure ML Compute jobs that has the client id of the
+                # user-assigned managed identity in it.
+                # See https://learn.microsoft.com/en-us/azure/machine-learning/how-to-identity-based-service-authentication#compute-cluster
+                # In case it is not set the ManagedIdentityCredential will
+                # default to using the system-assigned managed identity, if any.
+                managed_identity_client_id=os.environ.get("DEFAULT_IDENTITY_CLIENT_ID"),
+            ),
+        ),
+        scope,
+    )
+
+    api_version = setup_config["api_version"]  # Ensure this is a valid API version see: https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
+    model_name = setup_config['model_name']  # Ensure this is a valid model name
+    model_version = setup_config['model_version']  # Ensure this is a valid model version
+    deployment_name = re.sub(
+        r"[^a-zA-Z0-9-_]", "", f"{model_name}_{model_version}"
+    )  # If your Endpoint doesn't have harmonized deployment names, you can use the deployment name directly: see: https://aka.ms/trapi/models
+    if model_path is not None:
+        deployment_name = re.sub(
+            r"[^a-zA-Z0-9-_]", "", model_path
+        )
+    instance = setup_config['instance']  # See https://aka.ms/trapi/models for the instance name, remove /openai (library adds it implicitly)
+    endpoint = f"https://trapi.research.microsoft.com/{instance}"
+
+    client = AzureOpenAI(
+        azure_endpoint=endpoint,
+        azure_ad_token_provider=credential,
+        api_version=api_version,
+    )
+    return client
+
+def setup_openai():
+    return OpenAI(
+        api_key="sk-LYbQPilBE0kZMK0Jva15Wlhuih95WEvTkVpBEEXyikzIQAkG",
+        base_url="https://www.dmxapi.com/v1",
+    )
+
+def setup_vllm_openai():
+    return OpenAI(
+        api_key=API_KEY,
+        base_url=URL,
+    )
+
+def setup_client(args):
+    if args.model_type == "trapi":
+        return setup_trapi(model_path=args.model_path, 
+                           instance=args.instance, 
+                           api_version=args.api_version)
+    elif args.model_type == "openai":
+        return setup_openai()
+    elif args.model_type == "vllm":
+        return setup_vllm_openai()
+    else:
+        raise ValueError(f"Unknown model type: {args.model_type}")
+
+
 def query_llm(
     prompt,
     model,
@@ -41,6 +128,7 @@ def query_llm(
     client=None,
     temperature=0.5,
     max_new_tokens=128,
+    top_p=1.0,
     stop=None,
     num_sequences=1,
 ):
@@ -68,6 +156,7 @@ def query_llm(
                 temperature=temperature,
                 max_tokens=max_new_tokens,
                 n=num_sequences,
+                top_p=top_p,
             )
             # return completion.choices[0].message.content
             return [choice.message.content for choice in completion.choices]
@@ -102,7 +191,8 @@ def get_pred(data, args, fout):
         tokenizer = AutoTokenizer.from_pretrained(
             model_map[model], trust_remote_code=True
         )
-    client = OpenAI(base_url=URL, api_key=API_KEY)
+    # client = OpenAI(base_url=URL, api_key=API_KEY)
+    client = setup_client(args)
     for item in tqdm(data):
         context = item["context"]
         if args.rag > 0:
@@ -312,5 +402,11 @@ if __name__ == "__main__":
     parser.add_argument("--use_cache", "-c", action="store_true")
     parser.add_argument("--temperature", "-t", type=float, default=0.1)
     parser.add_argument("--num_sequences", "-n_seq", type=int, default=1)
+    parser.add_argument("--top_p", "-p", type=float, default=1.0)
+    parser.add_argument("--model_type", type=str, default="vllm")  # trapi, openai, vllm
+    parser.add_argument("--instance", type=str, default="gcr/shared")  # for trapi
+    parser.add_argument(
+        "--api_version", type=str, default="2024-10-21"
+    )  # for trapi, e.g., 2024-10-21
     args = parser.parse_args()
     main()

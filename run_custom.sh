@@ -12,6 +12,11 @@ while [[ $# -gt 0 ]]; do
         --num_gpus) NUM_GPUS="$2"; shift 2 ;;
         --cot_prompt_type) COT_PROMPT_TYPE="$2"; shift 2 ;;
         --num_sequences) NUM_SEQUENCES="$2"; shift 2 ;;
+        --top_p) TOP_P="$2"; shift 2 ;;
+        --model_type) MODEL_TYPE="$2"; shift 2 ;;
+        --instance) INSTANCE="$2"; shift 2 ;;
+        --api_version) API_VERSION="$2"; shift 2 ;;
+        --n_proc) N_PROC="$2"; shift 2 ;;
         *) echo "Unknown option: $1" && exit 1 ;;
     esac
 done
@@ -26,6 +31,11 @@ SAVE_DIR=${SAVE_DIR:-"/mnt/longcontext/models/siyuan/test_code/LongBench-v2/resu
 NUM_GPUS=${NUM_GPUS:-4}
 COT_PROMPT_TYPE=${COT_PROMPT_TYPE:-"default"}
 NUM_SEQUENCES=${NUM_SEQUENCES:-1}
+TOP_P=${TOP_P:-1.0}
+MODEL_TYPE=${MODEL_TYPE:-"vllm"}  # trapi, openai, vllm
+INSTANCE=${INSTANCE:-"gcr/shared"}  # for trapi
+API_VERSION=${API_VERSION:-"2024-10-21"}  # for trapi
+N_PROC=${N_PROC:-1}  # Number of processes for parallel execution
 
 # Kill all other vllm processes before starting
 pids=$(ps auxww | grep vllm | grep -v grep | awk '{print $2}')
@@ -73,11 +83,15 @@ echo "========================="
 
 
 # Run the prediction script with the specified model path and CoT argument
-python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc 1 \
+python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc $N_PROC \
     --save_dir $SAVE_DIR \
     --temperature $TEMPERATURE \
     --cot_prompt_type $COT_PROMPT_TYPE \
-    --num_sequences $NUM_SEQUENCES 
+    --num_sequences $NUM_SEQUENCES \
+    --top_p $TOP_P \
+    --model_type $MODEL_TYPE \
+    --instance $INSTANCE \
+    --api_version $API_VERSION
 echo "Prediction script done..."
 
 # if cot is true but cot answer extract is false, then run the following command for answer extract
