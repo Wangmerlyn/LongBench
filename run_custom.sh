@@ -125,8 +125,9 @@ if [ "$COT_ANSWER_EXTRACT" == "false" ]; then
     # Start the backend server in the background and redirect output to the log file
     mkdir -p "$(dirname "$LOG_FILE")"
     # serve the judge model
+    eval_tp_size=$(( NUM_GPUS < 4 ? NUM_GPUS : 4 ))
     JUDGE_MODEL="/mnt/longcontext/models/siyuan/llama3/Qwen2.5-7B-Instruct"
-    vllm serve $JUDGE_MODEL --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} --gpu-memory-utilization 0.95 --max_model_len 32768 --trust-remote-code  --port 8000 --seed 42 > "$LOG_FILE" 2>&1 &
+    vllm serve $JUDGE_MODEL --api-key token-abc123 --tensor-parallel-size ${eval_tp_size} --gpu-memory-utilization 0.95 --max_model_len 32768 --trust-remote-code  --port 8000 --seed 42 > "$LOG_FILE" 2>&1 &
     # Wait for the server to fully start
     sleep 400
 
