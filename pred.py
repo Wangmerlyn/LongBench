@@ -134,7 +134,7 @@ def query_llm(
 ):
     # truncate
     max_len = maxlen_map[model]
-    if model in model_map:
+    if not ("gpt" in model or "o1" in model or "o3" in model):
         input_ids = tokenizer.encode(prompt)
         if len(input_ids) > max_len:
             input_ids = input_ids[: max_len // 2] + input_ids[-max_len // 2 :]
@@ -185,11 +185,15 @@ def extract_answer(response):
 
 def get_pred(data, args, fout):
     model = args.model
-    if "gpt" in model or "o1" in model:
+    if "gpt" in model or "o1" in model or "o3" in model:
         tokenizer = tiktoken.encoding_for_model("gpt-4o-2024-08-06")
     elif 'deepseek' in model.lower():
         tokenizer = AutoTokenizer.from_pretrained(
             "deepseek-ai/DeepSeek-R1", trust_remote_code=True
+        )
+    elif "qwen" in model.lower():
+        tokenizer = AutoTokenizer.from_pretrained(
+            "Qwen/Qwen2.5-7B-Instruct", trust_remote_code=True
         )
     else:
         tokenizer = AutoTokenizer.from_pretrained(
