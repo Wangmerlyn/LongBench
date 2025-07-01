@@ -187,7 +187,7 @@ def get_pred(data, args, fout):
     model = args.model
     if "gpt" in model or "o1" in model or "o3" in model:
         tokenizer = tiktoken.encoding_for_model("gpt-4o-2024-08-06")
-    elif 'deepseek' in model.lower():
+    elif 'deepseek' in model.lower() and "distill" not in model.lower():
         tokenizer = AutoTokenizer.from_pretrained(
             "deepseek-ai/DeepSeek-R1", trust_remote_code=True
         )
