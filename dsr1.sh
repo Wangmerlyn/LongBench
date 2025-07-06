@@ -1,0 +1,1 @@
+python pred.py --model_path deepseek-r1-250528-128k --cot --n_proc 1 --save_dir /mnt/longcontext/models/siyuan/test_code/LongBench-v2/results     --temperature 0.6     --cot_prompt_type default --num_sequences 1 --top_p 0.95 --model_type openai
