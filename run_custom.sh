@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Get current timestamp and set it to an environment variable
+export TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
 # Parse command-line arguments using long options
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -32,57 +35,36 @@ NUM_GPUS=${NUM_GPUS:-4}
 COT_PROMPT_TYPE=${COT_PROMPT_TYPE:-"default"}
 NUM_SEQUENCES=${NUM_SEQUENCES:-1}
 TOP_P=${TOP_P:-1.0}
-MODEL_TYPE=${MODEL_TYPE:-"vllm"}  # trapi, openai, vllm
-INSTANCE=${INSTANCE:-"gcr/shared"}  # for trapi
-API_VERSION=${API_VERSION:-"2024-10-21"}  # for trapi
-N_PROC=${N_PROC:-1}  # Number of processes for parallel execution
+MODEL_TYPE=${MODEL_TYPE:-"vllm"}
+INSTANCE=${INSTANCE:-"gcr/shared"}
+API_VERSION=${API_VERSION:-"2024-10-21"}
+N_PROC=${N_PROC:-1}
 
-# Kill all other vllm processes before starting
+# Kill vllm processes
 pids=$(ps auxww | grep vllm | grep -v grep | awk '{print $2}')
-
 if [ -z "$pids" ]; then
     echo "No vllm processes found to kill."
 else
     echo "Killing the following vllm processes: $pids"
     echo "$pids" | xargs kill
-    if [ $? -eq 0 ]; then
-        echo "Successfully killed vllm processes."
-    else
-        echo "Failed to kill some vllm processes. Please check permissions or process status."
-    fi
 fi
 
-# Start the backend server in the background and redirect output to the log file
 mkdir -p "$(dirname "$LOG_FILE")"
-# vllm serve $MODEL_PATH --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} --gpu-memory-utilization 0.95 --max_model_len 131072 --trust-remote-code  --port 8000 --max_num_seqs 1 > "$LOG_FILE" 2>&1 &
-vllm serve $MODEL_PATH --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} --gpu-memory-utilization 0.95 --max_model_len 131072 --trust-remote-code --port 8000 --max_num_seqs 1 --seed 42 | tee "$LOG_FILE" > /dev/null 2>&1 &
-
-# Wait for the server to fully start
+vllm serve $MODEL_PATH --api-key token-abc123 --tensor-parallel-size ${NUM_GPUS} \
+    --gpu-memory-utilization 0.95 --max_model_len 131072 --trust-remote-code \
+    --port 8000 --max_num_seqs 1 --seed 42 | tee "$LOG_FILE" > /dev/null 2>&1 &
 sleep 400
 
-# Prepare the additional argument for CoT if IS_COT is true
+# Prepare CoT arguments
 COT_ARG=""
 if [ "$IS_COT" == "true" ]; then
     COT_ARG="--cot"
 fi
-
 if [ "$COT_ANSWER_EXTRACT" == "true" ]; then
     COT_ARG="$COT_ARG --cot_answer_extract"
 fi
 
-# echo all key parameters
-echo "========================="
-echo "Model Path: $MODEL_PATH"
-echo "Is CoT: $IS_COT"
-echo "CoT Answer Extract: $COT_ANSWER_EXTRACT"
-echo "Log File: $LOG_FILE"
-echo "Temperature: $TEMPERATURE"
-echo "Save Directory: $SAVE_DIR"
-echo "COT Prompt Type: $COT_PROMPT_TYPE"
-echo "========================="
-
-
-# Run the prediction script with the specified model path and CoT argument
+# Run prediction
 python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc $N_PROC \
     --save_dir $SAVE_DIR \
     --temperature $TEMPERATURE \
@@ -92,50 +74,28 @@ python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc $N_PROC \
     --model_type $MODEL_TYPE \
     --instance $INSTANCE \
     --api_version $API_VERSION
+
 echo "Prediction script done..."
 
-# if cot is true but cot answer extract is false, then run the following command for answer extract
 if [ "$COT_ANSWER_EXTRACT" == "false" ]; then
-    echo "Starting answer extract script..."
-    echo "========================="
-    echo "Model Path: $MODEL_PATH"
-    echo "Is CoT: $IS_COT"
-    echo "CoT Answer Extract: $COT_ANSWER_EXTRACT"
-    echo "Log File: $LOG_FILE"
-    echo "Judge Model: $JUDGE_MODEL"
-    echo "Temperature: $TEMPERATURE"
-    echo "Save Directory: $SAVE_DIR"
-    echo "========================="
-    # Kill all other vllm processes before starting
     pids=$(ps auxww | grep vllm | grep -v grep | awk '{print $2}')
+    [ -n "$pids" ] && echo "$pids" | xargs kill
 
-    if [ -z "$pids" ]; then
-        echo "No vllm processes found to kill."
-    else
-        echo "Killing the following vllm processes: $pids"
-        echo "$pids" | xargs kill
-        if [ $? -eq 0 ]; then
-            echo "Successfully killed vllm processes."
-        else
-            echo "Failed to kill some vllm processes. Please check permissions or process status."
-        fi
-    fi
-    # add a log file name suffix, e.g., vllm_serve_output.log -> vllm_serve_output_cot_extract.log
     LOG_FILE="${LOG_FILE%.log}_cot_extract.log"
-    # Start the backend server in the background and redirect output to the log file
     mkdir -p "$(dirname "$LOG_FILE")"
-    # serve the judge model
+
     eval_tp_size=$(( NUM_GPUS < 4 ? NUM_GPUS : 4 ))
     JUDGE_MODEL="/mnt/longcontext/models/siyuan/llama3/Qwen2.5-7B-Instruct"
-    vllm serve $JUDGE_MODEL --api-key token-abc123 --tensor-parallel-size ${eval_tp_size} --gpu-memory-utilization 0.95 --max_model_len 32768 --trust-remote-code  --port 8000 --seed 42 > "$LOG_FILE" 2>&1 &
-    # Wait for the server to fully start
+    vllm serve $JUDGE_MODEL --api-key token-abc123 --tensor-parallel-size ${eval_tp_size} \
+        --gpu-memory-utilization 0.95 --max_model_len 32768 --trust-remote-code \
+        --port 8000 --seed 42 > "$LOG_FILE" 2>&1 &
+
     sleep 400
 
-    # Run the answer extract script
-
     python answer_extract.py --model_path $MODEL_PATH --n_proc 1 \
-        --save_dir $SAVE_DIR    \
-        --judge_model_path $JUDGE_MODEL  \
+        --save_dir $SAVE_DIR \
+        --judge_model_path $JUDGE_MODEL \
         --temperature $TEMPERATURE
 fi
+
 python result.py
