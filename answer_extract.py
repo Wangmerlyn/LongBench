@@ -9,6 +9,8 @@ from transformers import AutoTokenizer
 import tiktoken
 import torch.multiprocessing as mp
 
+TIMESTAMP = os.getenv("TIMESTAMP", time.strftime("%Y%m%d_%H%M%S"))
+
 model_map = json.loads(open('config/model2path.json', encoding='utf-8').read())
 maxlen_map = json.loads(open('config/model2maxlen.json', encoding='utf-8').read())
 
@@ -18,7 +20,6 @@ API_KEY = "token-abc123"
 template_0shot_cot_ans = open('prompts/0shot_cot_ans.txt', encoding='utf-8').read()
 
 def query_llm(prompt, model, tokenizer, client=None, temperature=0.5, max_new_tokens=128, stop=None):
-    # truncate
     max_len = maxlen_map[model]
     if model in model_map:
         input_ids = tokenizer.encode(prompt)
@@ -67,7 +68,6 @@ def extract_answer(response):
 def main():
 
     if args.model_path is not None:
-        # overwrite model
         args.model = args.model_path
         model_map[args.model] = args.model_path
         maxlen_map[args.model] = maxlen_map["Llama-3.1-8B-Instruct"]
@@ -81,9 +81,9 @@ def main():
         api_key=API_KEY
     )
 
-    out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + f"_temp{args.temperature}_cot.jsonl")
+    out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + f"_temp{args.temperature}_cot-{TIMESTAMP}.jsonl")
 
-    dataset = load_dataset('THUDM/LongBench-v2', split='train') # dataset = json.load(open('data.json', 'r', encoding='utf-8'))
+    dataset = load_dataset('THUDM/LongBench-v2', split='train')
     data_all = [{"_id": item["_id"], "domain": item["domain"], "sub_domain": item["sub_domain"], "difficulty": item["difficulty"], "length": item["length"], "question": item["question"], "choice_A": item["choice_A"], "choice_B": item["choice_B"], "choice_C": item["choice_C"], "choice_D": item["choice_D"], "answer": item["answer"], "context": item["context"]} for item in dataset]
     with open(out_file, 'r', encoding='utf-8') as f:
         output_file_data =[json.loads(line) for line in f.readlines()]
@@ -98,30 +98,23 @@ def main():
         output_item['response'] = response
         output_item['pred'] = pred
         output_item['judge'] = output_item['pred'] == output_item['answer']
-    # write the output to the original file
+
     with open(out_file, 'w', encoding='utf-8') as f:
         for output_item in output_file_data:
             f.write(json.dumps(output_item, ensure_ascii=False) + '\n')
-    # write the same output_file_data to "./results/ folder"
-    alternate_output_file = os.path.join("./results/", args.model.split("/")[-1] + f"_temp{args.temperature}_cot.jsonl")
+
+    alternate_output_file = os.path.join("./results/", args.model.split("/")[-1] + f"_temp{args.temperature}_cot-{TIMESTAMP}.jsonl")
     with open(alternate_output_file, 'w', encoding='utf-8') as f:
         for output_item in output_file_data:
             f.write(json.dumps(output_item, ensure_ascii=False) + '\n')
     print("Output saved to %s" % alternate_output_file)
-
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--save_dir", "-s", type=str, default="results")
     parser.add_argument("--model", "-m", type=str, default="GLM-4-9B-Chat")
     parser.add_argument("--model_path", type=str, default=None)
-    # parser.add_argument("--cot", "-cot", action='store_true') # set to True if using COT
-    # parser.add_argument("--cot_answer_extract", type=bool, action='store_true') # set to True if using COT answer extraction
-    # parser.add_argument("--no_context", "-nc", action='store_true') # set to True if using no context (directly measuring memorization)
-    # parser.add_argument("--rag", "-rag", type=int, default=0) # set to 0 if RAG is not used, otherwise set to N when using top-N retrieved context
     parser.add_argument("--n_proc", "-n", type=int, default=16)
-    # parser.add_argument("--use_cache", "-c", action='store_true')
     parser.add_argument("--temperature", "-t", type=float, default=0.1)
     parser.add_argument("--judge_model_path",type=str, default="Qwen/Qwen2.5-7B-Instruct")
     args = parser.parse_args()
