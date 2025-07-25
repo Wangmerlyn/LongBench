@@ -119,32 +119,15 @@ def evaluate(mode='standard'):
             metrics[difficulty][1] += 1
             metrics[length][0] += pred['judge']
             metrics[length][1] += 1
-
             domain_dict[domain][0] += pred['judge']
             domain_dict[domain][1] += 1
 
         total_acc = sum([v[0] for v in metrics.values()])
         total_qs = sum([v[1] for v in metrics.values()])
-        model_results = {
-            'Model': '.'.join(file.split('.')[:-1]),
-            'Overall': round(100 * total_acc / total_qs, 1) if total_qs else 0,
-            'Easy': round(100 * metrics['easy'][0] / metrics['easy'][1], 1) if metrics['easy'][1] else 0,
-            'Hard': round(100 * metrics['hard'][0] / metrics['hard'][1], 1) if metrics['hard'][1] else 0,
-            'Short': round(100 * metrics['short'][0] / metrics['short'][1], 1) if metrics['short'][1] else 0,
-            'Medium': round(100 * metrics['medium'][0] / metrics['medium'][1], 1) if metrics['medium'][1] else 0,
-            'Long': round(100 * metrics['long'][0] / metrics['long'][1], 1) if metrics['long'][1] else 0,
-        }
+        model_name = '.'.join(file.split('.')[:-1])
+        overall_score = round(100 * total_acc / total_qs, 1) if total_qs else 0
 
-        for domain in all_domains:
-            domain_accuracy = round(100 * domain_dict[domain][0] / domain_dict[domain][1], 1) if domain_dict[domain][1] else 0.0
-            model_results[domain] = domain_accuracy
-
-        results_df = pd.concat([results_df, pd.DataFrame([model_results])], ignore_index=True)
-
-    filename = f'result_{mode}.csv'
-    results_df.to_csv(filename, index=False, encoding='utf-8')
-    print(f"Using mode '{mode}', results saved to {filename}")
-    print(f"Results:\n{results_df}")
+        print(f"{model_name}: {overall_score}")
 
 if __name__ == "__main__":
     evaluate(mode='standard')
