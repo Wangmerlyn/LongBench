@@ -9,6 +9,9 @@ from transformers import AutoTokenizer
 import tiktoken
 import torch.multiprocessing as mp
 
+# ----------------------------------------------------------------
+# NEW: global timestamp (env var or current time)
+# ----------------------------------------------------------------
 TIMESTAMP = os.getenv("TIMESTAMP", time.strftime("%Y%m%d_%H%M%S"))
 
 model_map = json.loads(open('config/model2path.json', encoding='utf-8').read())
@@ -20,6 +23,7 @@ API_KEY = "token-abc123"
 template_0shot_cot_ans = open('prompts/0shot_cot_ans.txt', encoding='utf-8').read()
 
 def query_llm(prompt, model, tokenizer, client=None, temperature=0.5, max_new_tokens=128, stop=None):
+    # truncate
     max_len = maxlen_map[model]
     if model in model_map:
         input_ids = tokenizer.encode(prompt)
@@ -68,6 +72,7 @@ def extract_answer(response):
 def main():
 
     if args.model_path is not None:
+        # overwrite model
         args.model = args.model_path
         model_map[args.model] = args.model_path
         maxlen_map[args.model] = maxlen_map["Llama-3.1-8B-Instruct"]
@@ -81,9 +86,15 @@ def main():
         api_key=API_KEY
     )
 
-    out_file = os.path.join(args.save_dir, args.model.split("/")[-1] + f"_temp{args.temperature}_cot-{TIMESTAMP}.jsonl")
+    # ------------------------------------------------------------
+    # NEW: timestamp now part of file name (must match pred.py)
+    # ------------------------------------------------------------
+    out_file = os.path.join(
+        args.save_dir,
+        args.model.split("/")[-1] + f"_temp{args.temperature}_cot-{TIMESTAMP}.jsonl"
+    )
 
-    dataset = load_dataset('THUDM/LongBench-v2', split='train')
+    dataset = load_dataset('THUDM/LongBench-v2', split='train') # dataset = json.load(open('data.json', 'r', encoding='utf-8'))
     data_all = [{"_id": item["_id"], "domain": item["domain"], "sub_domain": item["sub_domain"], "difficulty": item["difficulty"], "length": item["length"], "question": item["question"], "choice_A": item["choice_A"], "choice_B": item["choice_B"], "choice_C": item["choice_C"], "choice_D": item["choice_D"], "answer": item["answer"], "context": item["context"]} for item in dataset]
     with open(out_file, 'r', encoding='utf-8') as f:
         output_file_data =[json.loads(line) for line in f.readlines()]
@@ -98,16 +109,21 @@ def main():
         output_item['response'] = response
         output_item['pred'] = pred
         output_item['judge'] = output_item['pred'] == output_item['answer']
-
+    # write the output to the original file
     with open(out_file, 'w', encoding='utf-8') as f:
         for output_item in output_file_data:
             f.write(json.dumps(output_item, ensure_ascii=False) + '\n')
-
-    alternate_output_file = os.path.join("./results/", args.model.split("/")[-1] + f"_temp{args.temperature}_cot-{TIMESTAMP}.jsonl")
+    # write the same output_file_data to "./results/ folder"
+    alternate_output_file = os.path.join(
+        "./results/",
+        args.model.split("/")[-1] + f"_temp{args.temperature}_cot-{TIMESTAMP}.jsonl"
+    )
     with open(alternate_output_file, 'w', encoding='utf-8') as f:
         for output_item in output_file_data:
             f.write(json.dumps(output_item, ensure_ascii=False) + '\n')
     print("Output saved to %s" % alternate_output_file)
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
