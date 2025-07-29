@@ -333,7 +333,7 @@ def main():
     print(args)
 
     dataset = load_dataset(
-        "THUDM/LongBench-v2", split="train"
+        "zai-org/LongBench-v2", split="train"
     )  # dataset = json.load(open('data.json', 'r', encoding='utf-8'))
     data_all = [
         {

@@ -20,7 +20,7 @@ def main():
     print(args)
 
     # Load dataset
-    dataset = load_dataset("THUDM/LongBench-v2", split="train")
+    dataset = load_dataset("zai-org/LongBench-v2", split="train")
     data_all = [
         {
             "_id": item["_id"],
