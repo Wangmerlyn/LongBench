@@ -129,6 +129,17 @@ def evaluate(mode='standard'):
 
         print(f"{model_name}: {overall_score}")
 
+        # safe write to file for mix mode 
+        if mode == 'mix':
+            try:
+                out_dir = "/mnt/longcontext/models/siyuan/test_code/LongBench-v2/score_mix"
+                os.makedirs(out_dir, exist_ok=True)
+                out_path = os.path.join(out_dir, f"{model_name}.jsonl")
+                with open(out_path, 'a', encoding='utf-8') as f:
+                    f.write(json.dumps({"model": model_name, "overall_score": overall_score}) + "\n")
+            except Exception as e:
+                print(f"[Warning] Failed to write score for {model_name} in mix mode: {e}")
+
 if __name__ == "__main__":
     evaluate(mode='standard')
     evaluate(mode='boxed')
