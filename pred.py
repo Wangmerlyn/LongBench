@@ -9,6 +9,9 @@ from openai import OpenAI
 from transformers import AutoTokenizer
 import tiktoken
 import torch.multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor
+from tqdm import tqdm
+import json
 
 # ----------------------------------------------------------------
 # NEW: global timestamp (falls back to current time if env missing)
@@ -188,7 +191,7 @@ def extract_answer(response):
             return None
 
 
-def get_pred(data, args, fout):
+def get_pred(data, args, fout, fout_lock):
     model = args.model
     if "gpt" in model or "o1" in model or "o3" in model:
         tokenizer = tiktoken.encoding_for_model("gpt-4o-2024-08-06")
@@ -298,8 +301,9 @@ def get_pred(data, args, fout):
             item["pred"] = extract_answer(response)
             item["judge"] = item["pred"] == item["answer"]
             item["context"] = context[:1000]
-            fout.write(json.dumps(item, ensure_ascii=False) + "\n")
-            fout.flush()
+            with fout_lock:
+                fout.write(json.dumps(item, ensure_ascii=False) + "\n")
+                fout.flush()
 
 
 def main():
@@ -369,14 +373,16 @@ def main():
         fout = open(out_file, "w", encoding="utf-8")
         data = data_all
 
+    lock = mp.Lock()
     data_subsets = [data[i :: args.n_proc] for i in range(args.n_proc)]
     processes = []
     for rank in range(args.n_proc):
-        p = mp.Process(target=get_pred, args=(data_subsets[rank], args, fout))
+        p = mp.Process(target=get_pred, args=(data_subsets[rank], args, fout, lock))
         p.start()
         processes.append(p)
     for p in processes:
         p.join()
+
 
     # after all the processes are done, close the file, and copy the output file to "./results/"
     fout.close()
