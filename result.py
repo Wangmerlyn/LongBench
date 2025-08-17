@@ -2,6 +2,47 @@ import os
 import json
 import re
 import pandas as pd
+import smtplib
+from email.message import EmailMessage
+from typing import Optional
+
+from sqlalchemy import all_
+
+email_title="LongBench-v2 Evaluation Results Model {model_name}"
+email_body="\n"
+
+def send_mail(subject: str, body: str, to_csv: Optional[str] = None):
+    host = os.getenv("SMTP_HOST", "smtp.gmail.com")  # Gmail
+    port = int(os.getenv("SMTP_PORT", "465"))  # 465=SSL, 587=STARTTLS
+    user = os.getenv("SMTP_USER", "sywang0227@gmail.com")
+    password = os.getenv("SMTP_PASS")
+    if not user or not password:
+        print("SMTP_USER or SMTP_PASS not set, skipping email sending.")
+        return
+    sender = os.getenv("SMTP_FROM", user)
+    tos = [
+        x.strip()
+        for x in (to_csv or os.getenv("MAIL_TO", "wsy0227@sjtu.edu.cn")).split(",")
+        if x.strip()
+    ]
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = ", ".join(tos)
+    msg.set_content(body)
+
+    if port == 465:
+        with smtplib.SMTP_SSL(host, port) as s:
+            if user and password:
+                s.login(user, password)
+            s.send_message(msg)
+    else:
+        with smtplib.SMTP(host, port) as s:
+            s.starttls()
+            if user and password:
+                s.login(user, password)
+            s.send_message(msg)
 
 def extract_final_answer(text):
     match = re.search(r'final answer:\s*\(([A-Za-z])\)', text, re.IGNORECASE)
@@ -78,8 +119,11 @@ def evaluate(mode='standard'):
                'Long In-context Learning', 'Long Structured Data Understanding', 'Code Repository Understanding',
                'Single-Document QA', 'Long-dialogue History Understanding', 'Multi-Document QA']
     results_df = pd.DataFrame(columns=columns)
-
+    global email_body
+    global email_title
     all_domains = set()
+    all_models = [os.path.basename(file).split('.')[0] for file in files]
+    email_title = email_title.format(model_name=','.join(all_models))
     for file in files:
         pred_data = [json.loads(line) for line in open(os.path.join('results', file), encoding='utf-8')]
         for pred in pred_data:
@@ -128,6 +172,7 @@ def evaluate(mode='standard'):
         overall_score = round(100 * total_acc / total_qs, 1) if total_qs else 0
 
         print(f"{model_name}: {overall_score}")
+        email_body += f"Model: {model_name}\nMode: {mode}\nOverall Accuracy: {overall_score}\n"
 
         # safe write to file for mix mode 
         if mode == 'mix':
@@ -145,3 +190,4 @@ if __name__ == "__main__":
     evaluate(mode='boxed')
     evaluate(mode='mix')
     evaluate(mode='original')
+    send_mail(email_title, email_body)
