@@ -6,8 +6,6 @@ import smtplib
 from email.message import EmailMessage
 from typing import Optional
 
-from sqlalchemy import all_
-
 email_title="LongBench-v2 Evaluation Results Model {model_name}"
 email_body="\n"
 
