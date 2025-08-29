@@ -363,6 +363,7 @@ def main():
         if os.path.exists(out_file):
             with open(out_file, encoding="utf-8") as f:
                 has_data = {json.loads(line)["_id"]: 0 for line in f}
+            print(f"loaded {len(has_data)} items from cache file {out_file}")
         fout = open(out_file, "a", encoding="utf-8")
         data = []
         for item in data_all:

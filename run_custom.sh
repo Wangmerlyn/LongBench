@@ -1,7 +1,12 @@
 #!/bin/bash
 
 # Get current timestamp and set it to an environment variable
-export TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+# check USE_CACHE and set TIMESTAMP
+if [ "$USE_CACHE" = "true" ] || [ "$USE_CACHE" = "True" ] || [ "$USE_CACHE" = "1" ]; then
+    export TIMESTAMP="cache"
+else
+    export TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+fi
 
 # Parse command-line arguments using long options
 while [[ $# -gt 0 ]]; do
@@ -65,7 +70,7 @@ if [ "$COT_ANSWER_EXTRACT" == "true" ]; then
 fi
 
 # Run prediction
-python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc $N_PROC \
+cmd="python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc $N_PROC \
     --save_dir $SAVE_DIR \
     --temperature $TEMPERATURE \
     --cot_prompt_type $COT_PROMPT_TYPE \
@@ -73,7 +78,15 @@ python pred.py --model_path $MODEL_PATH $COT_ARG --n_proc $N_PROC \
     --top_p $TOP_P \
     --model_type $MODEL_TYPE \
     --instance $INSTANCE \
-    --api_version $API_VERSION
+    --api_version $API_VERSION"
+
+# check USE_CACHE
+if [ "$USE_CACHE" = "true" ] || [ "$USE_CACHE" = "True" ] || [ "$USE_CACHE" = "1" ]; then
+    cmd="$cmd --use_cache"
+fi
+
+# run command
+eval $cmd
 
 echo "Prediction script done..."
 
