@@ -12,6 +12,11 @@ import torch.multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
 import json
+import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm import tqdm
+import threading
+
 
 # ----------------------------------------------------------------
 # NEW: global timestamp (falls back to current time if env missing)
@@ -374,15 +379,21 @@ def main():
         fout = open(out_file, "w", encoding="utf-8")
         data = data_all
 
-    lock = mp.Lock()
-    data_subsets = [data[i :: args.n_proc] for i in range(args.n_proc)]
-    processes = []
-    for rank in range(args.n_proc):
-        p = mp.Process(target=get_pred, args=(data_subsets[rank], args, fout, lock))
-        p.start()
-        processes.append(p)
-    for p in processes:
-        p.join()
+    # lock = mp.Lock()
+    # data_subsets = [data[i :: args.n_proc] for i in range(args.n_proc)]
+    # processes = []
+    # for rank in range(args.n_proc):
+    #     p = mp.Process(target=get_pred, args=(data_subsets[rank], args, fout, lock))
+    #     p.start()
+    #     processes.append(p)
+    # for p in processes:
+    #     p.join()
+    max_workers = args.n_proc
+    fout_lock = threading.Lock()
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [executor.submit(get_pred, [item], args, fout, fout_lock) for item in data]
+        for _ in tqdm(as_completed(futures), total=len(futures)):
+            pass
 
 
     # after all the processes are done, close the file, and copy the output file to "./results/"
