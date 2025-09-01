@@ -105,7 +105,7 @@ if [ "$COT_ANSWER_EXTRACT" == "false" ]; then
 
     sleep 400
 
-    python answer_extract.py --model_path $MODEL_PATH --n_proc 1 \
+    python answer_extract.py --model_path $MODEL_PATH --n_proc 16 \
         --save_dir $SAVE_DIR \
         --judge_model_path $JUDGE_MODEL \
         --temperature $TEMPERATURE
